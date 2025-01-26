@@ -49,7 +49,7 @@ For this example we are going to assume that we have information on how the deat
 The covar table could contain estimates for every day of our model, but even if it did, we would need a way to fill in for the Euler timesteps. So we set the `order` to either connect the points we have with a line (like you see in the graph), or `constant` which holds the value constant until the next time at which there is a specified value.
 
 ```{r}
-covardata <-read_csv("Covariate.csv")
+covardata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/Covariate.csv")
 covardata
 
 #Save the covariate as a covariate_table:
