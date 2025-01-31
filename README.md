@@ -9,11 +9,10 @@ you get (roughly) from each file. This can both be helpful for troubleshooting a
 Files:
 SimulatedSIRdata.csv  Observations of recorded new infections of "pompitis" - used in all the following model files                     
 
-Model 1 SI.Rmd        The model that most of the chapter explains formatted for learning the method. Use this file as you read the chapter. 
-Model 2 SIR.Rmd       This second model is formatted more like you might want to for your own project. Use this file to run the second model 
-                      in the chapter and modifyt it to create your own model and project. 
-Model 3 SIR with Covar.Rmd (and pdf)    Example model setup and simualtion for a model with covariate data
-     Covariate.csv                         The covariate data used on the deathrate for people infected with "pompitis"
-Model 4 SIR time varying.Rmd (and pdf)     Example model setup and simulation for a model that depends on time (seasonality)
+*Model 1 SI.Rmd________The model that most of the chapter explains formatted for learning the method. Use this file as you read the chapter. 
+*Model 2 SIR.Rmd_______This second model is formatted more like you might want to for your own project. Use this file to run the second model in the chapter and modifyt it to create your own model and project. 
+*Model 3 SIR with Covar.Rmd (and pdf)______Example model setup and simualtion for a model with covariate data
+*****Covariate.csv_________________________The covariate data for the deathrate for people infected with "pompitis"
+*Model 4 SIR time varying.Rmd (and pdf)____Example model setup and simulation for a model that depends on time (seasonality)
 
-1918TompkinCountyNYFluDeaths.csv           A dataset refered to in the projects. You can use it for a project if you would like. 
+1918TompkinCountyNYFluDeaths.csv___________A dataset refered to in the projects. You can use it for a project if you would like. 
