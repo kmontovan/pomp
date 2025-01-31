@@ -1,0 +1,158 @@
+---
+title: "Comparing the results of R funcitons to Csnippets"
+author: "Katie Montovan"
+date: "2025-01-29"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(pomp_cdir="./tmp")
+```
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE}
+library(pomp)
+library(ggplot2)
+```
+
+This document is focused on comparing the simulation results from a simple SI model setup in R functions to the same model implemented in Csnippets. It can be helpful to modify this file to sort out a new model when you are switching to csnippets, and then copy and paste the step, rinit, rmeasure, and dmeasure fucntions back into your main file once you get it working. 
+
+## Load in data
+
+This dataset is one that we artificially made. The goal here is to figure out what model and parameters led to these tracked results. The data show the number of new cases of the illness each day.  The data is stored in github so that you can easily access it. 
+
+```{r get data}
+library(readr) #this library is used to help load the csv file. 
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedSIRdata.csv")
+```
+
+# Model In R functions
+
+```{r StepR}
+#Setup Model Step function
+R_step <- function(S, I, NewI, Beta, gamma, delta.t, ...){
+  infections <- rbinom(n=1,size=S, prob=1-exp(-Beta*I*delta.t))
+  recover <- rbinom(n=1,size=I, prob=1-exp(-gamma*delta.t))
+  S <- S - infections + recover
+  I <- I+ infections - recover
+  NewI <- NewI + infections
+  c(S=S, I=I, NewI=NewI)}
+
+R_rinit <- function(N, fI, ...){
+  c(S = round((1-fI)*N), 
+    I= round(fI*N), NewI=0)}
+
+R_rmeas <- function(NewI, rho,k,...){
+  c(NewCases=rnbinom(n=1,size=k,
+                    mu=rho*NewI))}
+
+R_dmeas <- function(log,NewCases, NewI, rho, k, ...){
+  dnbinom(x=NewCases, size=k, mu=rho*NewI, log=log)
+}
+```
+
+#Model in Csnippets
+
+
+## Switching to Csnippets
+We delayed on this piece because it can be tricky to troubleshoot problems that arise with the Csnippets and getting your computer to run Csnippets correctly. You can go on without the Csnippets but your codes will take longer to run. 
+
+```{r Csnippets}
+C_step <- Csnippet("
+  double infections = rbinom(S,1-exp(-Beta*I*dt));
+  double recoveries = rbinom(I,1-exp(-gamma*dt));
+  S += -infections + recoveries;
+  I += infections - recoveries;
+  NewI += infections;
+")
+
+C_rinit <- Csnippet("
+  S = nearbyint((1-fI)*N);
+  I = nearbyint(fI*N);
+  NewI = 0;
+")
+
+C_rinit <- Csnippet("
+  S = N-4;
+  I = 4;
+  NewI = 0;
+")
+
+C_rmeas <- Csnippet("
+  NewCases = rnbinom_mu(k,rho*NewI);
+  ")
+
+C_dmeas <- Csnippet("
+    lik = dnbinom_mu(NewCases,k,rho*NewI, give_log);
+  ")
+```
+
+Setup Pomp structure with the R function compoenents
+```{r build model R}
+SI_ModelR <- pomp(
+  data = simuldata,
+    times="day", 
+    t0=0, 
+    statenames=c("S","I","NewI"),
+    accumvars="NewI",
+    paramnames=c("Beta","gamma","rho","k","N","fI"),
+    params= c(N=1000, #population size
+              fI = 0.004, #fraction of population infected at time 0
+              Beta=.0024, # rate of spread of illness - per day
+              gamma=.1, #recovery rate
+              rho=.8, #fraction of new infections that are recorded
+              k=5 ), #changes the variability of reporting accuracy
+      rinit=R_rinit,
+    rprocess=euler(R_step,delta.t= 1/4), 
+    rmeasure=R_rmeas,
+    dmeasure=R_dmeas
+  )
+```
+
+```{r build model C}
+SI_ModelC <- pomp(
+  data = simuldata,
+    times="day", 
+    t0=0, 
+    statenames=c("S","I","NewI"),
+    accumvars="NewI",
+    paramnames=c("Beta","gamma","rho","k","N","fI"),
+    params= c(N=1000, #population size
+              fI = 0.004, #fraction of population infected at time 0
+              Beta=.0024, # rate of spread of illness - per day
+              gamma=.1, #recovery rate
+              rho=.8, #fraction of new infections that are recorded
+              k=5 ), #changes the variability of reporting accuracy
+    rinit=C_rinit,
+    rprocess=euler(C_step,delta.t= 1/4), 
+    rmeasure=R_rmeas,
+    dmeasure=C_dmeas
+  )
+```
+
+Simulate the results and plot them on the same graph for the R functions and Csnippet versions of the model to make sure they are doing roughly the same thing. 
+```{r run simulations}
+simsR <- SI_ModelR |>
+  simulate(
+    nsim=25, 
+    format="data.frame",
+    include.data=FALSE
+  )
+
+simsC <- SI_ModelC |>
+  simulate(
+    nsim=25, 
+    format="data.frame",
+    include.data=FALSE
+  )
+
+
+ggplot()+
+  geom_line(data=simsR, aes(x=day,y=NewCases,group=.id),color="green")+
+  geom_line(data=simsC, aes(x=day,y=NewCases,group=.id),color="blue")+
+  guides(color="none")+
+  theme_bw()
+```
+```
