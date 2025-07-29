@@ -3,9 +3,9 @@ title: "Model 3: Basic SIR with a covariate deathrate"
 author: "Katie Montovan, Aaron King, Eli Goldwyn &amp; Julie Blackwood "
 date: "2025-1-22"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 This is a modification of the SIR model (model 2) to show how you can include a covariate. We bring in a file containing rates of death from the disease. We assume that the only death is happening from the illness. The covariate captures the hospitals getting better at treating the illness. 
@@ -40,7 +40,7 @@ library(dplyr)
 
 ```{r}
 library(readr) #this library is only used to load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedSIRdata.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
 ```
 
 ##Import covariate table and make it into a pomp covariate table
@@ -85,8 +85,8 @@ sir_step <- Csnippet("
 ")
 
 sir_rinit <- Csnippet("  
-  S = nearbyint((1-fI)*N);
-  I = nearbyint(fI*N);
+  S = nearbyint((1-phi)*N);
+  I = nearbyint(phi*N);
   R = 0;
   NewI = 0;
 ")
@@ -108,14 +108,14 @@ SIR_Model <-
     t0=0, #the time to start the simulations. 
     rprocess=euler(
       sir_step,    
-      delta.t=1/4 # steps of ≤ 6hr
+      delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit, 
     rmeasure=si_rmeas, 
     statenames=c("S","I","R","NewI"), 
     accumvars="NewI",
     covar=covar,
-    paramnames=c("N","fI","Beta","gamma","r","rho","k") 
+    paramnames=c("N","phi","Beta","gamma","r","rho","k") 
   )
 ```
 
@@ -124,7 +124,7 @@ SIR_Model <-
 SIR_Model |>
   simulate(
     params=c(N=1000, #population size
-            fI = 0.004, #number of infections at time 0
+            phi = 0.004, #number of infections at time 0
             Beta=0.0024, # rate of spread of illness - per year
             gamma=0.1, #recovery rate
             r = 0.01, #rate of individuals loosing immunity

@@ -19,16 +19,14 @@ library(ggplot2)
 
 This document is focused on comparing the simulation results from a simple SI model setup in R functions to the same model implemented in Csnippets. It can be helpful to modify this file to sort out a new model when you are switching to csnippets, and then copy and paste the step, rinit, rmeasure, and dmeasure fucntions back into your main file once you get it working. 
 
-## Load in data
-
-This dataset is one that we artificially made. The goal here is to figure out what model and parameters led to these tracked results. The data show the number of new cases of the illness each day.  The data is stored in github so that you can easily access it. 
+## Load in data - from github, your computer, etc.
 
 ```{r get data}
 library(readr) #this library is used to help load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedSIRdata.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
 ```
 
-# Model In R functions
+# R functions
 
 ```{r StepR}
 #Setup Model Step function
@@ -40,9 +38,9 @@ R_step <- function(S, I, NewI, Beta, gamma, delta.t, ...){
   NewI <- NewI + infections
   c(S=S, I=I, NewI=NewI)}
 
-R_rinit <- function(N, fI, ...){
-  c(S = round((1-fI)*N), 
-    I= round(fI*N), NewI=0)}
+R_rinit <- function(N, phi, ...){
+  c(S = round((1-phi)*N), 
+    I= round(phi*N), NewI=0)}
 
 R_rmeas <- function(NewI, rho,k,...){
   c(NewCases=rnbinom(n=1,size=k,
@@ -53,12 +51,9 @@ R_dmeas <- function(log,NewCases, NewI, rho, k, ...){
 }
 ```
 
-#Model in Csnippets
 
 
-## Switching to Csnippets
-We delayed on this piece because it can be tricky to troubleshoot problems that arise with the Csnippets and getting your computer to run Csnippets correctly. You can go on without the Csnippets but your codes will take longer to run. 
-
+## Csnippets
 ```{r Csnippets}
 C_step <- Csnippet("
   double infections = rbinom(S,1-exp(-Beta*I*dt));
@@ -69,8 +64,8 @@ C_step <- Csnippet("
 ")
 
 C_rinit <- Csnippet("
-  S = nearbyint((1-fI)*N);
-  I = nearbyint(fI*N);
+  S = nearbyint((1-phi)*N);
+  I = nearbyint(phi*N);
   NewI = 0;
 ")
 
@@ -89,7 +84,7 @@ C_dmeas <- Csnippet("
   ")
 ```
 
-Setup Pomp structure with the R function compoenents
+# Setup Pomp structure with the R function compoenents
 ```{r build model R}
 SI_ModelR <- pomp(
   data = simuldata,
@@ -97,9 +92,9 @@ SI_ModelR <- pomp(
     t0=0, 
     statenames=c("S","I","NewI"),
     accumvars="NewI",
-    paramnames=c("Beta","gamma","rho","k","N","fI"),
+    paramnames=c("Beta","gamma","rho","k","N","phi"),
     params= c(N=1000, #population size
-              fI = 0.004, #fraction of population infected at time 0
+              phi = 0.004, #fraction of population infected at time 0
               Beta=.0024, # rate of spread of illness - per day
               gamma=.1, #recovery rate
               rho=.8, #fraction of new infections that are recorded
@@ -111,6 +106,8 @@ SI_ModelR <- pomp(
   )
 ```
 
+# Setup Pomp structure with the R function compoenents
+
 ```{r build model C}
 SI_ModelC <- pomp(
   data = simuldata,
@@ -118,9 +115,9 @@ SI_ModelC <- pomp(
     t0=0, 
     statenames=c("S","I","NewI"),
     accumvars="NewI",
-    paramnames=c("Beta","gamma","rho","k","N","fI"),
+    paramnames=c("Beta","gamma","rho","k","N","phi"),
     params= c(N=1000, #population size
-              fI = 0.004, #fraction of population infected at time 0
+              phi = 0.004, #fraction of population infected at time 0
               Beta=.0024, # rate of spread of illness - per day
               gamma=.1, #recovery rate
               rho=.8, #fraction of new infections that are recorded
@@ -132,8 +129,11 @@ SI_ModelC <- pomp(
   )
 ```
 
-Simulate the results and plot them on the same graph for the R functions and Csnippet versions of the model to make sure they are doing roughly the same thing. 
-```{r run simulations}
+# Compare
+
+Simulate the results and plot them on the same graph for the R functions and Csnippet versions of the model to make sure they are doing roughly the same thing. If there is an error somewhere, they might be doing drastically different things, so this is just a quick check. 
+
+```{r runsimulations}
 simsR <- SI_ModelR |>
   simulate(
     nsim=25, 
@@ -150,9 +150,8 @@ simsC <- SI_ModelC |>
 
 
 ggplot()+
-  geom_line(data=simsR, aes(x=day,y=NewCases,group=.id),color="green")+
-  geom_line(data=simsC, aes(x=day,y=NewCases,group=.id),color="blue")+
+  geom_line(data=simsR, aes(x=day,y=NewCases,group=.id),color="blue",alpha=.5)+
+  geom_line(data=simsC, aes(x=day,y=NewCases,group=.id),color="gray",alpha=.5)+
   guides(color="none")+
   theme_bw()
-```
 ```

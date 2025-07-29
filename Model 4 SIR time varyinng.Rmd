@@ -1,10 +1,8 @@
 ---
 title: "Model 4: SIR Model with seasonality"
-author: "Katie Montovan, Aaron King, Eli Goldwyn &amp; Julie Blackwood "
+author: "Katie Montovan, Aaron King, Eli Goldwyn, and Julie Blackwood "
 date: "2025-1-22"
 output:
-  html_document:
-    df_print: paged
   pdf_document: default
 ---
 
@@ -17,17 +15,12 @@ We assume that you have already read the chapter and worked through the "Model 1
 knitr::opts_chunk$set(
                     message=FALSE,
                     warning=TRUE,
-                    include=TRUE,
-                    cache=TRUE, #this annd the next line can help speed up knitting
-                    cache.path=paste0("temp/","SIR/","cache/"),
-                    progress=TRUE #shows progress bar
+                    include=TRUE
                   )
 ```
 
-```{r packages, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE}
+```{r, message=FALSE, warning=FALSE,include=FALSE}
 options(
-  tidyverse.quiet=TRUE,
-  pomp_archive_dir="results",
   stringsAsFactors=FALSE
 )
 library(tidyverse)
@@ -42,7 +35,7 @@ library(dplyr)
 ## Import data
 ```{r}
 library(readr) #this library is only used to load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedSIRdata.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
 ```
 
 # Model setup
@@ -51,15 +44,15 @@ These are the things you may need to adjust for each new model, or, when making 
 
 We will assume that the rate of spread of the disease varies throughout the year. 
 
-Lets start by figuring out a function that varies like we would like. We will multiply this by `Beta`, the rate of spread of the disease. We are going to make an unrealistic function so that we can more clearly see the affects in the simulations
-```{r Saved_values}
+Lets start by figuring out a function that varies like we would like. We will multiply this by \verb|Beta|, the rate of spread of the disease. We are going to make an unrealistic function so that we can more clearly see the affects in the simulations
+```{r}
 t=1:150
 y=(cos(20*pi/365*t-pi/2)+1.1)
 plot(t,y)
 ```
 
 Now, where we had `Beta` in the model we can put in the function in terms of time. WE make a new variable called `BetaV` to hold the time varying Beta value. 
-```{r csnippets 1}
+```{r}
 sir_step <- Csnippet("
   double BetaV = (cos(20*3.14/365*t-3.14/2)+1.1)*Beta;
   double infections = rbinom(S,1-exp(-BetaV*I*dt));
@@ -71,9 +64,9 @@ sir_step <- Csnippet("
   NewI += infections;
 ")
 
-sir_rinit <- Csnippet("  
-  S = nearbyint((1-fI)*N);
-  I = nearbyint(fI*N);
+sir_rinit <- Csnippet("
+  S = nearbyint((1-phi)*N);
+  I = nearbyint(phi*N);
   R = 0;
   NewI = 0;
 ")
@@ -83,31 +76,39 @@ si_rmeas <- Csnippet("
 ")
 ```
 
-```{r build model}
-simulate(
+```{r}
+
+SIR_Model <-
+  pomp(
     data=simuldata, #the timeseries data
-    times="day", #timesteps in the simuldata dataset
-    t0=0, #the time to start the simulations. 
+    times="day", #timesteps in the simuldata
+    t0=0, #time to start the simulations
     rprocess=euler(
-      sir_step,    
-      delta.t=1/4 # steps of ≤ 6hr
+      sir_step,
+      delta.t=1/4 # steps of <= 6hr
     ),
-    rinit=sir_rinit, 
-    rmeasure=si_rmeas, 
-    accumvars="NewI",  #This state variable resets to 0 at each observation in simuldata
-    statenames=c("S","I","R","NewI"), #The names of all state variables being modeled
+    rinit=sir_rinit,
+    rmeasure=si_rmeas,
+    statenames=c("S","I","R","NewI"),
+    accumvars="NewI",
+    paramnames=c("N","phi","Beta","gamma","r","rho","k")
+  )
+```
+
+```{r}
+SIR_Model |>
+  simulate(
     params=c(N=1000, #population size
-            fI = 0.004, #number of infections at time 0
+            phi = 0.004, #num of infections at time 0
             Beta=0.0024, # rate of spread of illness - per year
             gamma=0.1, #recovery rate
             r = 0.01, #rate of individuals loosing immunity
             rho=0.8, #fraction of new infections that are recorded
-            k=5), #changes the variability of reporting accuracy
-    paramnames=c("N","fI","Beta","gamma","r","rho","k") ,
+            k=5 ), #changes the variability of reporting accuracy
     nsim=10,
     format="data.frame",
-    include.data=FALSE
-  )-> sims
+    include.data=TRUE
+  ) -> sims
 
 sims |>
   ggplot(aes(x=day,y=NewCases,group=.id,color=.id=="data"))+
@@ -118,13 +119,13 @@ sims |>
 
 You can see the increase in infections that happens at about days 40, 75, 115, and 150.
 
-You also might want to be able to use an if function. 
+You also might want to be able to use an if function.
 
-If you want to type in "if t>100, then BetaV=0, else BetaV=Beta" in the Csnippet one way to do this is to type `BetaV= (t >100) ? 0.0 : Beta`. Basically This is saying check whether the thing in the parentheses is true, if it is, return the value after the question mark, if it isn't, return the value after the colon. 
+If you want to type in "if t>100, then BetaV=0, else BetaV=Beta" in the Csnippet one way to do this is to type `BetaV= (t >100) ? 0.0 : Beta`. Basically This is saying check whether the thing in the parentheses is true, if it is, return the value after the question mark, if it isn't, return the value after the colon.
 
 In the code, this looks like:
 
-```{r build model 2}
+```{r}
 sir_step <- Csnippet("
   double BetaV= (t >100) ? 0.0 : Beta;
   double infections = rbinom(S,1-exp(-BetaV*I*dt));
@@ -136,30 +137,36 @@ sir_step <- Csnippet("
   NewI += infections;
 ")
 
-simulate(
+
+SIR_Model <-
+  pomp(
     data=simuldata, #the timeseries data
     times="day", #timesteps in the simuldata dataset
-    t0=0, #the time to start the simulations. 
+    t0=0, #the time to start the simulations.
     rprocess=euler(
-      sir_step,    
-      delta.t=1/4 # steps of ≤ 6hr
+      sir_step,
+      delta.t=1/4 # steps of <= 6hr
     ),
-    rinit=sir_rinit, 
-    rmeasure=si_rmeas, 
-    accumvars="NewI",  
+    rinit=sir_rinit,
+    rmeasure=si_rmeas,
     statenames=c("S","I","R","NewI"),
+    accumvars="NewI",
+    paramnames=c("N","phi","Beta","gamma","r","rho","k")
+  )
+
+SIR_Model |>
+  simulate(
     params=c(N=1000, #population size
-            fI = 0.004, #number of infections at time 0
+            phi = 0.004, #number of infections at time 0
             Beta=0.0024, # rate of spread of illness - per year
             gamma=0.1, #recovery rate
             r = 0.01, #rate of individuals loosing immunity
             rho=0.8, #fraction of new infections that are recorded
-            k=5), 
-    paramnames=c("N","fI","Beta","gamma","r","rho","k") ,
+            k=5 ), #changes the variability of reporting accuracy
     nsim=10,
     format="data.frame",
-    include.data=FALSE
-  )-> sims
+    include.data=TRUE
+  ) -> sims
 
 sims |>
   ggplot(aes(x=day,y=NewCases,group=.id,color=.id=="data"))+
@@ -169,5 +176,3 @@ sims |>
 ```
 
 We can see that at day 100, Beta is set to zero and there are no new cases from then on. 
-
-There are almost endless ways you might want to change this, but trying to find the right code to include can be frustrating and sometimes it might be better to add the seasonality through a covariate if what you want is at all complicated. 
