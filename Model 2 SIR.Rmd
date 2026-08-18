@@ -48,22 +48,6 @@ library(rstudioapi)
 current_path = rstudioapi::getActiveDocumentContext()$path 
 #Set the working directory to this location
 setwd(dirname(current_path ))
-
-#make a function to add results to the saved file and return all results in the file
-AddResultsToSave = function(savefilename,results,MAKEFILE){
-  #This will make a new (or overwrite) the file if MAKEFILE is set to TRUE
-  if(MAKEFILE){results %>% write.csv(savefilename)}
-  
-  alldata = read.csv(savefilename) %>%
-    bind_rows(results) %>% #add new data
-    select(!starts_with("X"))%>%  #Remove extra columns
-    group_by_all()%>% summarize(X0=n())%>% #remove duplicate rows
-    filter(is.finite(loglik)) %>% #Removes rows without likelihoods
-    arrange(-loglik) 
-  alldata %>%
-    write.csv(savefilename)
-  data.frame(alldata)
-}
 ```
 
 ## Setup a plotting function
@@ -87,7 +71,7 @@ plot_pairs <- function (dataset, fit_params) {
 ## Import data
 ```{r}
 library(readr) #this library is only used to load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 ```
 
 # Model setup
@@ -145,7 +129,7 @@ SIR_Model <-
     times="day", #timesteps in the simuldata dataset
     t0=0, #the time to start the simulations. 
     rprocess=euler(
-      sir_step,    
+      step.fun = sir_step,    
       delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit, 
@@ -301,10 +285,8 @@ results <- results |>
 
 #add results to saved file using `appennd_data()' in pomp
 #You can overwrite saved results using the option ``overwrite=TRUE"
-#AddResultsToSave(savefile,results,MAKEFILE) -> all
 all <- append_data(data=results,file=savefile,overwrite=MAKEFILE)
 ```
-MAKE SURE THIS PART WORKS!!!!!!!
 
 ```{r}
 #plot all results saved so far 
@@ -387,7 +369,7 @@ results |>
   rename(loglik=loglik.est) |>
   filter(is.finite(loglik)) -> results
 
-all <- AddResultsToSave(savefile,results,MAKEFILE=FALSE)
+all <- append_data(data=results,file=savefile,overwrite=MAKEFILE)
 plot_pairs(all,fit_params)
 
 all |>
