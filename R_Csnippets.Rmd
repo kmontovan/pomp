@@ -23,7 +23,7 @@ This document is focused on comparing the simulation results from a simple SI mo
 
 ```{r get data}
 library(readr) #this library is used to help load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 ```
 
 # R functions
@@ -100,7 +100,7 @@ SI_ModelR <- pomp(
               rho=.8, #fraction of new infections that are recorded
               k=5 ), #changes the variability of reporting accuracy
       rinit=R_rinit,
-    rprocess=euler(R_step,delta.t= 1/4), 
+    rprocess=euler(step.fun = R_step,delta.t= 1/4), 
     rmeasure=R_rmeas,
     dmeasure=R_dmeas
   )
@@ -123,7 +123,7 @@ SI_ModelC <- pomp(
               rho=.8, #fraction of new infections that are recorded
               k=5 ), #changes the variability of reporting accuracy
     rinit=C_rinit,
-    rprocess=euler(C_step,delta.t= 1/4), 
+    rprocess=euler(step.fun = C_step,delta.t= 1/4), 
     rmeasure=R_rmeas,
     dmeasure=C_dmeas
   )
