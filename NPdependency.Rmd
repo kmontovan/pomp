@@ -20,7 +20,7 @@ library(ggplot2)
 library(dplyr)
 
 library(readr)  
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 ```
 
 The number of particles chosen should affect the variability of the estimate. Here is one way you could look at the `est` and `se` across a range of values for `Np`.
@@ -54,7 +54,7 @@ SI_Model <- pomp(
     times="day", 
     t0=0, 
     rinit=si_rinit,
-    rprocess=euler(si_step,delta.t= 1/4), 
+    rprocess=euler(step.fun=si_step,delta.t= 1/4), 
     rmeasure=si_rmeas,
     dmeasure=si_dmeas,
     statenames=c("S","I","NewI"),
