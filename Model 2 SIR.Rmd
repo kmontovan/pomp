@@ -1,7 +1,7 @@
 ---
-title: "Basic SI Model"
+title: "Basic SIR Model"
 author: "Katie Montovan &amp; Aaron King"
-date: "2024-12-22"
+date: "2026-8-18"
 output:
   pdf_document: default
   html_document:
