@@ -1,4 +1,4 @@
-This folder contains files to support the chapter "Computational methods for efficient fitting of ODE models to time series data using pomp."  by Kathryn Montovan, Julie Blackwood, Eli Goldwyn, and Aaron A. King
+This folder contains files to support the chapter "Computational methods for efficient fitting of ODE models to time series data using pomp."  by Kathryn Montovan, Julie Blackwood, Eli Goldwyn, and Aaron A. King. Updates were implemented on August 18, 2026 to make the files work in pomp version 6.4. These updates were to save the uploaded data as a data.frame and to modify the euler inputs to specify "step.fun=". 
 
 There are rmd, csv, and pdf files. The rmd files should be used in combination with the chapter while you explore the 
 presented model and can be modified to make your own model. The csv files are datasets you will use in the model or
