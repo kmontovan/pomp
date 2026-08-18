@@ -1,7 +1,7 @@
 ---
 title: "Basic SI Model for pompitis"
 author: "Katie Montovan, Aaron King, Eli Goldwyn &amp; Julie Blackwood "
-date: "2025-7-23"
+date: "2026-8-18"
 output:
   pdf_document: default
   html_document:
@@ -59,7 +59,7 @@ This dataset was artificially made. The goal is to figure out what model and par
 
 ```{r get_data}
 library(readr) #this library is used to help load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 
 
 ggplot(
@@ -118,7 +118,7 @@ SI_Model <- pomp(
     times="day", 
     t0=0, 
     rinit=si_rinit,
-    rprocess=euler(si_step,delta.t= 1/4), 
+    rprocess=euler(step.fun = si_step,delta.t= 1/4), 
     rmeasure=si_rmeas,
     dmeasure=si_dmeas,
     statenames=c("S","I","NewI"),
@@ -195,7 +195,7 @@ SI_ModelC <- pomp(
     times="day", 
     t0=0, 
     rinit=si_rinitC,
-    rprocess=euler(si_stepC,delta.t= 1/4), 
+    rprocess=euler(step.fun = si_stepC,delta.t= 1/4), 
     rmeasure=si_rmeasC,
     dmeasure=si_dmeasC,
     statenames=c("S","I","NewI"),
@@ -241,7 +241,7 @@ SI_Model <- pomp(
     times="day", 
     t0=0, 
     rinit=si_rinitC,
-    rprocess=euler(si_stepC,delta.t= 1/4), 
+    rprocess=euler(step.fun = si_stepC,delta.t= 1/4), 
     rmeasure=si_rmeasC,
     dmeasure=si_dmeasC,
     statenames=c("S","I","NewI"),
