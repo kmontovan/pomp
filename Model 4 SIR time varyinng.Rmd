@@ -35,7 +35,7 @@ library(dplyr)
 ## Import data
 ```{r}
 library(readr) #this library is only used to load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 ```
 
 # Model setup
@@ -84,7 +84,7 @@ SIR_Model <-
     times="day", #timesteps in the simuldata
     t0=0, #time to start the simulations
     rprocess=euler(
-      sir_step,
+      step_fun = sir_step,
       delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit,
@@ -144,7 +144,7 @@ SIR_Model <-
     times="day", #timesteps in the simuldata dataset
     t0=0, #the time to start the simulations.
     rprocess=euler(
-      sir_step,
+      step_fun = sir_step,
       delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit,
