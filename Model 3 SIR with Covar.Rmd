@@ -1,7 +1,7 @@
 ---
 title: "Model 3: Basic SIR with a covariate deathrate"
 author: "Katie Montovan, Aaron King, Eli Goldwyn &amp; Julie Blackwood "
-date: "2025-1-22"
+date: "2026-8-18"
 output:
   pdf_document: default
   html_document:
@@ -40,7 +40,7 @@ library(dplyr)
 
 ```{r}
 library(readr) #this library is only used to load the csv file. 
-simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")
+simuldata <-read_csv("https://raw.githubusercontent.com/kmontovan/pomp/refs/heads/main/SimulatedPompitisData.csv")|>as.data.frame()
 ```
 
 ##Import covariate table and make it into a pomp covariate table
@@ -107,7 +107,7 @@ SIR_Model <-
     times="day", #timesteps in the simuldata dataset
     t0=0, #the time to start the simulations. 
     rprocess=euler(
-      sir_step,    
+      step.fun=sir_step,    
       delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit, 
