@@ -144,7 +144,7 @@ SIR_Model <-
     times="day", #timesteps in the simuldata dataset
     t0=0, #the time to start the simulations.
     rprocess=euler(
-      step_fun = sir_step,
+      step.fun = sir_step,
       delta.t=1/4 # steps of <= 6hr
     ),
     rinit=sir_rinit,
